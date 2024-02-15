@@ -5,8 +5,6 @@
 #include <numeric>
 #include <vector>
 #include <algorithm>
-#define DEBUG
-
 
 enum maptoken
 {
@@ -98,9 +96,6 @@ int main(int argc, char* argv[])
     // Read file
     std::ifstream input(file_path);
 
-#undef DEBUG
-
-
     // Split file lines into vectors of strings into input_data
     std::string line;
     std::vector<std::vector<std::string>> input_data;
@@ -118,16 +113,6 @@ int main(int argc, char* argv[])
             input_data.erase(input_data.begin() + line);
         }
     }
-
-#ifdef DEBUG
-    for (auto i : input_data)
-    {
-        for (auto j : i)
-        {
-            std::cout << j << std::endl;
-        }
-    }
-#endif
 
     int file_size = 0;
 
@@ -179,7 +164,7 @@ int main(int argc, char* argv[])
         }
     }
 
-    std::cout << "Hello world " << std::endl;
+    std::cout << "Parsing complete! Writing data ..." << std::endl;
     // Output to file
     std::ofstream fs(output_file_name, std::ios::out | std::ios::binary);
     fs.write((const char*)output_bytearray.data(), output_bytearray.size());
