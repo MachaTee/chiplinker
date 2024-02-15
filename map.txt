@@ -1,0 +1,4 @@
+EXENAME "output.txt"
+SEGMENT "my_first_text.txt" 0x0000-0x1000
+SEGMENT "my_second_text.txt" 0x2000-0x3000
+; This is a comment

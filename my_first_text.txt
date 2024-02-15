@@ -1,0 +1,1 @@
+This is the first text file, as you can see, it is quite a small one. This should be placed between 0x0000 and 0x1000

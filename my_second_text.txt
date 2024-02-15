@@ -1,0 +1,1 @@
+On the other hand, this is the second text file, this one is also pretty small but ... Let's just hope it works. This should be placed between 0x2000 and 0x3000
