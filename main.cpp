@@ -28,25 +28,19 @@ const std::vector<std::byte> process_segment(const std::string segment_name, con
 
     // Ensure that target length is not smaller than segment length
     if (target_length < segment_length)
-    {
         throw std::length_error(messages::object_too_large(segment_name));
-    }
-
+    
     // If no issue then proceed
     std::vector<std::byte> output_segment;
 
     // Put segment into output
     for (unsigned char i : buffer)
-    {
         output_segment.push_back((std::byte)i);
-    }
-
+    
     // Pad with zeroes
     while (output_segment.size() < target_length)
-    {
         output_segment.push_back((std::byte)0U);
-    }
-
+    
     return output_segment;
 }
 
@@ -54,7 +48,6 @@ std::string output_file_name = "output.rom";
 std::string file_path = "map.txt";
 
 bool get_file_name = true;
-
 bool link_mode = false;
 
 link_and_address argument_handling(const std::vector<std::string_view> arg_vector)
@@ -88,13 +81,9 @@ link_and_address argument_handling(const std::vector<std::string_view> arg_vecto
                     mode = arg_mode::none;
                     break;
                 }
-
                 // Check if file exists
                 if (!std::filesystem::exists(arg)) 
-                {
                     throw std::runtime_error((std::string)arg + ": No such file");
-                }
-
                 // Otherwise push to vector
                 lna.link_files.push_back(arg);
                 continue;
@@ -109,13 +98,11 @@ link_and_address argument_handling(const std::vector<std::string_view> arg_vecto
                 // If does not match regex, throw error
                 if (!std::regex_match((std::string)arg, std::regex("(0x[0-9a-fA-F]+)-(0x[0-9a-fA-F]+)")))
                     throw std::runtime_error((std::string)messages::malformed_argument::malformed_address);
-
                 // Otherwise push to vector
                 lna.addresses.push_back(arg);
                 continue;
         }
-
-
+        
         switch(get_arg[arg])
         {
             // Quick and dirty argument handling for version and help (both output messages without doing anything else)
@@ -154,7 +141,6 @@ link_and_address argument_handling(const std::vector<std::string_view> arg_vecto
         // Check if equal number of addresses as object files
         if (lna.link_files.size() != lna.addresses.size())
             throw std::runtime_error((std::string)messages::malformed_argument::invalid_address_to_link_file);
-    
     }
 
     return lna;
@@ -166,7 +152,6 @@ int main(int argc, char *argv[])
     const std::vector<std::string_view> arguments(argv + 1, argv + argc);
 
     link_and_address lna {argument_handling(arguments)};
-    std::cout << output_file_name << std::endl;
     std::vector<std::vector<std::string>> input_data;
     
     // Read file (if necessary)
@@ -180,7 +165,6 @@ int main(int argc, char *argv[])
         while (std::getline(input, line))
             input_data.push_back(vsplit(line));
         
-
         // Strip comments
         for (size_t line = 0; line < input_data.size(); line++)
             if (!input_data[line][0].compare(";"))
@@ -212,9 +196,7 @@ int main(int argc, char *argv[])
         {
             std::vector<std::string> temp_vector = vsplit(input_data[line].back(), '-');
             if (std::stoi(temp_vector.back(), 0, 0x10) > file_size)
-            {
                 file_size = std::stoi(temp_vector.back(), 0, 0x10);
-            }
         }
     }
 
@@ -247,9 +229,7 @@ int main(int argc, char *argv[])
             std::vector<std::string> temp_vector = vsplit(lines.back(), '-');
             std::vector<std::byte> segment_data = process_segment(lines[1], std::stoi(temp_vector.front(), 0, 0x10), std::stoi(temp_vector.back(), 0, 0x10));
             for (int addr = std::stoi(temp_vector.front(), 0, 0x10); addr < std::stoi(temp_vector.back(), 0, 0x10); addr++)
-            {
                 output_bytearray[addr] = segment_data[addr - std::stoi(temp_vector.front(), 0, 0x10)];
-            }
             break;
         }
         default:
@@ -257,10 +237,9 @@ int main(int argc, char *argv[])
         }
     }
 
-
     // Otherwise process arguments
-
     std::cout << "Parsing complete! Writing data to " << output_file_name << "..." << std::endl;
+    
     // Output to file
     std::ofstream fs(output_file_name, std::ios::out | std::ios::binary);
     fs.write((const char *)output_bytearray.data(), output_bytearray.size());
