@@ -1,3 +1,10 @@
+// Define what language alerts should be in
+#define LANG EN
+
+// Current version
+#define VERSION "v1.0-d\n"
+
+#include <format>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -6,8 +13,13 @@
 #include <algorithm>
 #include <filesystem>
 #include <regex>
-#include "objects.h"
-#include "utilities.h"
+#include "objects.hpp"
+#include "utilities.hpp"
+
+#if (LANG == EN)
+// Display English-language alerts
+#include "lang\en\alerts.hpp"
+#endif
 
 const std::vector<std::byte> process_segment(const std::string segment_name, const unsigned int starting_address, const unsigned int ending_address)
 {
@@ -28,19 +40,19 @@ const std::vector<std::byte> process_segment(const std::string segment_name, con
 
     // Ensure that target length is not smaller than segment length
     if (target_length < segment_length)
-        throw std::length_error(messages::object_too_large(segment_name));
-    
+        throw std::length_error(std::format(alerts::exceptions::object_too_large, segment_name));
+
     // If no issue then proceed
     std::vector<std::byte> output_segment;
 
     // Put segment into output
     for (unsigned char i : buffer)
         output_segment.push_back((std::byte)i);
-    
+
     // Pad with zeroes
     while (output_segment.size() < target_length)
         output_segment.push_back((std::byte)0U);
-    
+
     return output_segment;
 }
 
@@ -56,82 +68,82 @@ link_and_address argument_handling(const std::vector<std::string_view> arg_vecto
 
     arg_mode mode = arg_mode::none;
 
-    for (const std::string_view& arg : arg_vector)
+    for (const std::string_view &arg : arg_vector)
     {
-        switch(mode)
+        switch (mode)
         {
-            case arg_mode::none:
+        case arg_mode::none:
+            break;
+        case arg_mode::output:
+            output_file_name = arg;
+            get_file_name = false;
+            alerts::display_message(msg_type::output, output_file_name);
+            mode = arg_mode::none;
+            continue;
+        case arg_mode::mapfile:
+            file_path = arg;
+            alerts::display_message(msg_type::read_file, file_path);
+            mode = arg_mode::none;
+            continue;
+        case arg_mode::link:
+            // Ensure is valid file name and not argument
+            // If is argument, break and continue execution.
+            if (arg[0] == '-')
+            {
+                mode = arg_mode::none;
                 break;
-            case arg_mode::output:
-                output_file_name = arg;
-                get_file_name = false;
-                std::cout << "Set output to " << output_file_name << std::endl;
+            }
+            // Check if file exists
+            if (!std::filesystem::exists(arg))
+                throw std::runtime_error((std::string)arg + ": No such file");
+            // Otherwise push to vector
+            lna.link_files.push_back(arg);
+            continue;
+        case arg_mode::address:
+            // Ensure is valid address and not argument
+            // If is argument, break and continue execution.
+            if (arg[0] == '-')
+            {
                 mode = arg_mode::none;
-                continue;
-            case arg_mode::mapfile:
-                file_path = arg;
-                std::cout << "Reading " << file_path << " as map file" << std::endl;
-                mode = arg_mode::none;
-                continue;
-            case arg_mode::link:
-                // Ensure is valid file name and not argument
-                // If is argument, break and continue execution.
-                if (arg[0] == '-')
-                {
-                    mode = arg_mode::none;
-                    break;
-                }
-                // Check if file exists
-                if (!std::filesystem::exists(arg)) 
-                    throw std::runtime_error((std::string)arg + ": No such file");
-                // Otherwise push to vector
-                lna.link_files.push_back(arg);
-                continue;
-            case arg_mode::address:
-                // Ensure is valid address and not argument
-                // If is argument, break and continue execution.
-                if (arg[0] == '-')
-                {
-                    mode = arg_mode::none;
-                    break;
-                }
-                // If does not match regex, throw error
-                if (!std::regex_match((std::string)arg, std::regex("(0x[0-9a-fA-F]+)-(0x[0-9a-fA-F]+)")))
-                    throw std::runtime_error((std::string)messages::malformed_argument::malformed_address);
-                // Otherwise push to vector
-                lna.addresses.push_back(arg);
-                continue;
+                break;
+            }
+            // If does not match regex, throw error
+            if (!std::regex_match((std::string)arg, std::regex("(0x[0-9a-fA-F]+)-(0x[0-9a-fA-F]+)")))
+                throw std::runtime_error((std::string)alerts::malformed_argument::malformed_address);
+            // Otherwise push to vector
+            lna.addresses.push_back(arg);
+            continue;
         }
-        
-        switch(get_arg[arg])
+
+        switch (get_arg[arg])
         {
-            // Quick and dirty argument handling for version and help (both output messages without doing anything else)
-            case arg_type::help:
-                messages::display_message(arg_type::help);
-                exit(0);
-            case arg_type::version:
-                messages::display_message(arg_type::version);
-                exit(0);
-         
-            // More advanced arguments set the state of the program to the specified arg_mode to be executed on the following iteration
-            // Throw an exception if there aren't any more arguments to come
-            case arg_type::output:
-                mode = arg_mode::output;
-                if (&arg == &arg_vector.back())
-                    throw std::runtime_error((std::string)messages::malformed_argument::no_file_specified);
-                continue;
-            case arg_type::mapfile:
-                mode = arg_mode::mapfile;                
-                if (&arg == &arg_vector.back())
-                    throw std::runtime_error((std::string)messages::malformed_argument::no_file_specified);
-                continue;
-            case arg_type::links:
-                mode = arg_mode::link;
-                link_mode = true;
-                continue;
-            case arg_type::addresses:
-                mode = arg_mode::address;
-                continue;
+        // Quick and dirty argument handling for version and help (both output messages without doing anything else)
+        case arg_type::help:
+            alerts::display_message(msg_type::help);
+            exit(0);
+        case arg_type::version:
+            alerts::display_message(msg_type::version);
+            exit(0);
+
+        // More advanced arguments set the state of the program to the specified arg_mode to be executed on the following iteration
+        // Throw an exception if there aren't any more arguments to come
+        case arg_type::output:
+            mode = arg_mode::output;
+            if (&arg == &arg_vector.back())
+                throw std::runtime_error((std::string)alerts::malformed_argument::no_file_specified);
+            continue;
+        case arg_type::mapfile:
+            mode = arg_mode::mapfile;
+            if (&arg == &arg_vector.back())
+                throw std::runtime_error((std::string)alerts::malformed_argument::no_file_specified);
+            continue;
+        case arg_type::links:
+            mode = arg_mode::link;
+            link_mode = true;
+            continue;
+        case arg_type::addresses:
+            mode = arg_mode::address;
+            continue;
         }
     }
 
@@ -140,7 +152,7 @@ link_and_address argument_handling(const std::vector<std::string_view> arg_vecto
     {
         // Check if equal number of addresses as object files
         if (lna.link_files.size() != lna.addresses.size())
-            throw std::runtime_error((std::string)messages::malformed_argument::invalid_address_to_link_file);
+            throw std::runtime_error((std::string)alerts::malformed_argument::invalid_address_to_link_file);
     }
 
     return lna;
@@ -151,9 +163,9 @@ int main(int argc, char *argv[])
     /* TODO: commandline param handling */
     const std::vector<std::string_view> arguments(argv + 1, argv + argc);
 
-    link_and_address lna {argument_handling(arguments)};
+    link_and_address lna{argument_handling(arguments)};
     std::vector<std::vector<std::string>> input_data;
-    
+
     // Read file (if necessary)
     if (!link_mode)
     {
@@ -164,12 +176,12 @@ int main(int argc, char *argv[])
 
         while (std::getline(input, line))
             input_data.push_back(vsplit(line));
-        
+
         // Strip comments
         for (size_t line = 0; line < input_data.size(); line++)
             if (!input_data[line][0].compare(";"))
                 input_data.erase(input_data.begin() + line);
-        
+
         // Close input file
         input.close();
     }
@@ -178,12 +190,10 @@ int main(int argc, char *argv[])
         // Generate pseudo-file from command-line arguments
         for (size_t line = 0; line < lna.link_files.size(); line++)
         {
-            input_data.push_back(std::vector<std::string> 
-            {
-                SEGMENT_TOKEN, 
+            input_data.push_back(std::vector<std::string>{
+                SEGMENT_TOKEN,
                 (std::string)lna.link_files[line],
-                (std::string)lna.addresses[line]
-            });
+                (std::string)lna.addresses[line]});
         }
     }
 
@@ -207,7 +217,6 @@ int main(int argc, char *argv[])
     output_bytearray.resize(file_size);
     std::fill(output_bytearray.begin(), output_bytearray.end(), (std::byte)'\00');
 
-    
     // Process tokens
 
     for (std::vector<std::string> lines : input_data)
@@ -216,7 +225,7 @@ int main(int argc, char *argv[])
         {
         case maptoken::exename:
         {
-            if (get_file_name) 
+            if (get_file_name)
             {
                 output_file_name = std::accumulate(lines.begin() + 1, lines.end(), std::string(""));
                 output_file_name.erase(std::remove(output_file_name.begin(), output_file_name.end(), '"'), output_file_name.end());
@@ -238,11 +247,15 @@ int main(int argc, char *argv[])
     }
 
     // Otherwise process arguments
-    std::cout << "Parsing complete! Writing data to " << output_file_name << "..." << std::endl;
-    
+    alerts::display_message(msg_type::parse_success, output_file_name);
+
     // Output to file
     std::ofstream fs(output_file_name, std::ios::out | std::ios::binary);
     fs.write((const char *)output_bytearray.data(), output_bytearray.size());
+
+    // Done
     fs.close();
+    alerts::display_message(msg_type::success);
+
     return 0;
 }
