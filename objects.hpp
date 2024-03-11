@@ -9,7 +9,7 @@
 #endif
 
 #if(LANG==EN)
-    #include "lang\en\alerts.hpp"
+    #include "lang/en/alerts.hpp"
 #endif
 
 #ifndef OBJECTS_INCLUDED
