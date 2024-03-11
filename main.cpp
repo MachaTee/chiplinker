@@ -18,7 +18,7 @@
 
 #if (LANG == EN)
 // Display English-language alerts
-#include "lang\en\alerts.hpp"
+#include "lang/en/alerts.hpp"
 #endif
 
 const std::vector<std::byte> process_segment(const std::string segment_name, const unsigned int starting_address, const unsigned int ending_address)
